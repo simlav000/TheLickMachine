@@ -5,16 +5,22 @@ import librosa.display
 import matplotlib.pyplot as plt
 
 
-def vectorize(fname: str):
+def vectorize(fname: str, target_duration: float = 5.0,  sr: int = 16000) -> list:
     # Load the audio file. Set sample rate to 16kHz
-    y, sr = librosa.load(fname, sr=16000)
+    y, _ = librosa.load(fname, sr=sr)
+
+    # Calculate target length in samples
+    target_length = int(target_duration * sr)
+
+    # Trim or pad the audio to the target length
+    y = librosa.util.fix_length(y, size=target_length)
 
     # Compute the Mel-spectrogram
     mel_spec = librosa.feature.melspectrogram(
         y=y,
         sr=sr,
         n_fft=2048,
-        hop_length=512,
+        hop_length=512,  # number of samples between successive frames
         n_mels=128,
         fmin=20,  # Lowest frequency for human hearing
         fmax=8000  # Highest frequency for human hearing
@@ -34,25 +40,34 @@ def vectorize(fname: str):
         hop_length=512
     )
 
+    features_raw = [mel_spec, mel_spec_delta, mel_spec_delta2, chromagram]
+    return features_raw
+
+
+def normalize(features):
+    mel_spec, mel_spec_delta, mel_spec_delta2, chromagram = features
     from scipy.ndimage import zoom
     # Resize the chromagram to match the Mel spectrogram's dimensions
-    chromagram_resized = zoom(chromagram, (mel_spec.shape[0] / chromagram.shape[0], 1), order=1)  # Linear interpolation
-
+    chromagram_resized = zoom(
+        # Linear interpolation
+        chromagram, (mel_spec.shape[0] / chromagram.shape[0], 1), order=1)
 
     features = np.stack(
-             [
-             mel_spec,
-             mel_spec_delta,
-             mel_spec_delta2,
-             chromagram_resized
-             ],
-             axis=0
-    )
+        [mel_spec, mel_spec_delta, mel_spec_delta2, chromagram_resized], axis=0)
 
     epsilon = 1e-10
-    features = (features - np.mean(features, axis=(1, 2), keepdims=True)) / (np.std(features, axis=(1, 2), keepdims=True) + epsilon)
+    features = (features - np.mean(features, axis=(1, 2), keepdims=True)
+                ) / (np.std(features, axis=(1, 2), keepdims=True) + epsilon)
 
     return features
+
+
+def check_normalization(features):
+    means = np.mean(features, axis=(1, 2))
+    stds = np.std(features, axis=(1, 2))
+    print("Means per channel:", means)
+    print("Standard deviations per channel:", stds)
+
 
 def plot_features(features, sr=16000):
     mel_spec, mel_spec_delta, mel_spec_delta2, chromagram = features
@@ -95,7 +110,8 @@ def plot_features(features, sr=16000):
 
     # Plot the Chromagram
     plt.subplot(4, 1, 4)
-    librosa.display.specshow(chromagram, x_axis='time', y_axis='chroma', cmap='coolwarm')
+    librosa.display.specshow(chromagram, x_axis='time',
+                             y_axis='chroma', cmap='coolwarm')
     plt.colorbar(label='Chromagram amplitude')
     plt.title('Chromagram')
 
@@ -104,33 +120,42 @@ def plot_features(features, sr=16000):
     plt.show()
 
 
-def check_normalization(features):
-    means = np.mean(features, axis=(1, 2))
-    stds = np.std(features, axis=(1, 2))
-    print("Means per channel:", means)
-    print("Standard deviations per channel:", stds)
-
 def process_audio_directory(input_dir, output_file):
     # List to hold feature arrays
     all_features = []
 
-    # Iterate through all files in the directory
-    for root, _, files in os.walk(input_dir):
-        for file in files:
-            if file.endswith(".mp3"):
-                file_path = os.path.join(root, file)
-                try:
-                    features = vectorize(file_path)
-                    all_features.append(features)
-                except Exception as e:
-                    print(f"Failed to process {file_path}: {e}")
+    mp3_files = [f for f in os.listdir(input_dir) if f.endswith(".mp3")]
+
+    for idx, file in enumerate(mp3_files, start=1):
+        file_path = os.path.join(input_dir, file)
+        try:
+            features = normalize(vectorize(file_path))
+            all_features.append(features)
+        except Exception as e:
+            print(f"Failed to process {file_path}: {e}")
+
+        print(f"Processed {idx}/{len(mp3_files)}: {file}")
 
     # Stack all features into one numpy array
     dataset = np.stack(all_features, axis=0)
     np.save(output_file, dataset)
 
     print(f"Dataset saved to {output_file}")
+
+
 if __name__ == "__main__":
-    # Path to the audio file
-    sample_lick_fpath = rf"/home/simlav000/McGill/GroupProjects/TheLickMachine/data/TheLick-ALL_2022-02-07v5/sample/"
-    process_audio_directory(sample_lick_fpath, "audio_dataset_sample.npy")
+    pwd = os.environ["PWD"]
+
+    dir_positive = os.path.join(
+        pwd, "../data/TheLick-ALL_2022-02-07v5/positive/")
+
+    data = np.load("audio_dataset_sample.npy")
+
+    feature0 = data[0]
+    feature12 = data[12]
+
+    if all(obj.shape == (4, 128, 157) for obj in data):
+        print("True")
+    else:
+        print("False")
+    # process_audio_directory(dir_positive, "audio_dataset_sample.npy")
