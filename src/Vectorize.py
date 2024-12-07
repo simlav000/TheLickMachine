@@ -22,6 +22,7 @@ def vectorize(fname: str, target_duration: float = 5.0,  sr: int = 16000) -> lis
         n_fft=2048,
         hop_length=512,  # number of samples between successive frames
         n_mels=128,
+        # Hear for yourself: https://www.szynalski.com/tone-generator/
         fmin=20,  # Lowest frequency for human hearing
         fmax=8000  # Highest frequency for human hearing
     )
@@ -142,20 +143,10 @@ def process_audio_directory(input_dir, output_file):
 
     print(f"Dataset saved to {output_file}")
 
-
 if __name__ == "__main__":
-    pwd = os.environ["PWD"]
-
-    dir_positive = os.path.join(
-        pwd, "../data/TheLick-ALL_2022-02-07v5/positive/")
-
-    data = np.load("audio_dataset_sample.npy")
-
-    feature0 = data[0]
-    feature12 = data[12]
-
-    if all(obj.shape == (4, 128, 157) for obj in data):
-        print("True")
-    else:
-        print("False")
-    # process_audio_directory(dir_positive, "audio_dataset_sample.npy")
+    # Path to the audio file
+    sample_lick_fpath = rf"/home/simlav000/McGill/GroupProjects/TheLickMachine/data/TheLick-ALL_2022-02-07v5/sample/0.mp3"
+    features = vectorize(sample_lick_fpath)
+    print(features.shape)
+    np.save("output.npy", features)
+    #process_audio_directory(sample_lick_fpath, "audio_dataset_sample.npy")
