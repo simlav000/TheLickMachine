@@ -1,3 +1,5 @@
+import os
+import numpy as np
 import torch
 import torchvision
 import torch.nn as nn
@@ -5,14 +7,55 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader 
 import torch.nn.functional
 
+def main():
+    load_dataset()
+
+
+
 def load_dataset():
-    return 1
+    Simon = r"/mnt/c/Users/Simon/OneDrive/School/00 Fall 2024/COMP 451 - Fundamentals of Machine Learning/Project/Data/dataset_vectorized/"
+    path = Simon
+
+    load_things_other_than_solo = False
+
+    x_positive_solo  = np.load(path + "solo_positives_vectorized.npy")
+    y_positive_solo  = np.ones(x_positive_solo.shape[0])
+    x_negative_solo  = np.load(path + "solo_negatives_vectorized.npy")
+    y_negative_solo  = np.zeros(x_negative_solo.shape[0])
+
+    if load_things_other_than_solo:
+        x_positive_combo = np.load(path + "combo_positives_vectorized.npy")
+        y_positive_combo = np.ones(x_positive_combo.shape[0])
+        x_negative_combo = np.load(path + "combo_negatives_vectorized.npy")
+        y_negative_combo = np.zeros(x_negative_combo.shape[0])
+
+        x_positive_ext   = np.load(path + "external_positives_vectorized.npy")
+        y_positive_ext   = np.ones(x_positive_ext.shape[0])
+        x_negative_ext   = np.load(path + "external_negatives_vectorized.npy")
+        y_negative_ext   = np.zeros(x_negative_ext.shape[0])
+
+        # A tuple (x,y)
+        return (
+            np.stack([
+                x_positive_solo, x_positive_combo, x_positive_ext,
+                x_negative_solo, x_negative_combo, x_negative_ext
+            ]),
+            np.stack([
+                y_positive_solo, y_positive_combo, y_positive_ext,
+                y_negative_solo, y_negative_combo, y_negative_ext
+            ])
+            )
+
+    return (
+        np.stack([x_positive_solo, x_negative_solo]),
+        np.stack([y_positive_solo, y_negative_solo])
+        )
 
 class TheLickMachine(nn.Module):
     def __init__(self):
         super(TheLickMachine, self).__init__()
 
-        self.input_shape = (4, 1, 1)
+        self.input_shape = (4, 128, 157)
 
         self.conv_block1 = nn.Sequential(
             # My idea is to start with large kernel sizes since the features 
@@ -67,9 +110,6 @@ class TheLickMachine(nn.Module):
         )
 
 
-
-
-
     def forward(self, x, verbose=False):
         input_shape = x.shape
         x = self.conv_block1(x)
@@ -82,3 +122,8 @@ class TheLickMachine(nn.Module):
             print(f"Conv1 shape: {conv1_shape}")
             print(f"Flattened shape: {flat_shape}")
         return x
+
+
+if __name__ == "__main__":
+    #from Vectorize import plot_features
+    main()
