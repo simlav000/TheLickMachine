@@ -1,3 +1,6 @@
 data
 *.venv
 *.npy
+path.txt
+*.png
+*.jpg
