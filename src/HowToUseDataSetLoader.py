@@ -1,9 +1,10 @@
 from PlotFour import plot_four
 from DataSetLoader import makeSolo, makeCombo, makeExt
 
-solo_loader = makeSolo()
+solo_loader = makeSolo(workers=2)
 for (i, (x, y)) in enumerate(solo_loader, 0):
     plot_four(x.numpy()[0], name="solo")
+    print(y[0])
 solo_loader = None
 
 # combo_loader = makeCombo()

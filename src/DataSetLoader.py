@@ -33,9 +33,8 @@ class Data(Dataset):
     def __len__(self):
         return self.x.shape[0]
 
-bs = 64
 # Make functions that return the loaders
-def makeSolo():
+def makeSolo(bs=64, shuffle=True, workers=0):
     # Load data
     x_positive_solo = np.load(pathToDataset + "solo_positives_vectorized.npy")
     y_positive_solo = np.ones(x_positive_solo.shape[0])
@@ -46,11 +45,11 @@ def makeSolo():
     x_solo = np.concatenate((x_positive_solo, x_negative_solo), axis=0)
     y_solo = np.concatenate((y_positive_solo, y_negative_solo), axis=0)
     solo_dataset = Data(x_solo, y_solo, transform_train)
-    solo_loader = DataLoader(solo_dataset, batch_size=bs, shuffle=True)
+    solo_loader = DataLoader(solo_dataset, batch_size=bs, shuffle=shuffle, num_workers=workers)
     return solo_loader
 
 
-def makeCombo():
+def makeCombo(bs=64, shuffle=True, workers=0):
     # Load data
     x_positive_combo = np.load(pathToDataset + "combo_positives_vectorized.npy")
     y_positive_combo = np.ones(x_positive_combo.shape[0])
@@ -61,10 +60,10 @@ def makeCombo():
     x_combo = np.concatenate((x_positive_combo, x_negative_combo), axis=0)
     y_combo = np.concatenate((y_positive_combo, y_negative_combo), axis=0)
     combo_dataset = Data(x_combo, y_combo, transform_train)
-    combo_loader = DataLoader(combo_dataset, batch_size=bs, shuffle=True)
+    combo_loader = DataLoader(combo_dataset, batch_size=bs, shuffle=shuffle, num_workers=workers)
     return combo_loader
 
-def makeExt():
+def makeExt(bs=64, shuffle=True, workers=0):
     # Load data
     x_positive_ext = np.load(pathToDataset + "external_positives_vectorized.npy")
     y_positive_ext = np.ones(x_positive_ext.shape[0])
@@ -75,5 +74,5 @@ def makeExt():
     x_ext = np.concatenate((x_positive_ext, x_negative_ext), axis=0)
     y_ext = np.concatenate((y_positive_ext, y_negative_ext), axis=0)
     ext_dataset = Data(x_ext, y_ext, transform_train)
-    ext_loader = DataLoader(ext_dataset, batch_size=bs, shuffle=True)
+    ext_loader = DataLoader(ext_dataset, batch_size=bs, shuffle=shuffle, num_workers=workers)
     return ext_loader
