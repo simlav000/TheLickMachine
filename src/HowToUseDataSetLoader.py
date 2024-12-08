@@ -1,18 +1,17 @@
 from PlotFour import plot_four
-from DataSetLoader import makeSolo, makeCombo, makeExt
+from DataSetLoader import makeLoader
+import torchvision.transforms as transforms
 
-solo_loader = makeSolo(workers=2)
-for (i, (x, y)) in enumerate(solo_loader, 0):
-    plot_four(x.numpy()[0], name="solo")
+transform_train = transforms.Compose([
+    # transforms.RandomAffine(degrees=30, translate=(0.08, 0.08)), # Add translation + rot. (helps with overfitting)
+    # transforms.Normalize((0.5,), (0.5,))# Normalize data
+    ])
+
+types = ["solo", "combo", "external"]
+type = 0
+(loader_train, loader_test) = makeLoader(types[type], workers=2, transform_train=transform_train)
+for (i, (x, y)) in enumerate(loader_test, 0):
+    plot_four(x.numpy()[0], name=types[type])
     print(y[0])
-solo_loader = None
-
-# combo_loader = makeCombo()
-# for (i, (x, y)) in enumerate(combo_loader, 0):
-#     plot_four(x.numpy()[0], name="combo")
-# combo_loader = None
-#
-# ext_loader = makeExt()
-# for (i, (x, y)) in enumerate(ext_loader, 0):
-#     plot_four(x.numpy()[0], name="ext")
-# ext_loader = None
+loader_train = None
+loader_test = None
