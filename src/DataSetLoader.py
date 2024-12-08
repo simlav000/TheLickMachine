@@ -9,8 +9,6 @@ from torch.utils.data import Dataset, DataLoader
 pwd = os.environ["PWD"]
 with open(pwd + "/path.txt", "r") as file:
     pathToDataset = file.read().strip()
-print(pathToDataset)
-
 
 transform_train = transforms.Compose([
     # transforms.RandomAffine(degrees=3, translate=(0.08, 0.08)), # Add translation + rot. (helps with overfitting)
