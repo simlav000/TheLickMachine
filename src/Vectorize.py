@@ -22,6 +22,7 @@ def vectorize(fname: str, target_duration: float = 5.0,  sr: int = 16000) -> lis
         n_fft=2048,
         hop_length=512,  # number of samples between successive frames
         n_mels=128,
+        # Hear for yourself: https://www.szynalski.com/tone-generator/
         fmin=20,  # Lowest frequency for human hearing
         fmax=8000  # Highest frequency for human hearing
     )
@@ -141,7 +142,6 @@ def process_audio_directory(input_dir, output_file):
     np.save(output_file, dataset)
 
     print(f"Dataset saved to {output_file}")
-
 
 if __name__ == "__main__":
     pwd = os.environ["PWD"]

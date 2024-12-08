@@ -1,0 +1,42 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx} % Required for inserting images
+ \usepackage{hyperref}
+\usepackage[letterpaper, margin=1in]{geometry}
+
+\title{Recognizing \textit{The Lick} - Project Proposal}
+\author{Maddy Walkington, Louis Bouchard, Simon Lavoie, Simon Pino-Buisson}
+\date{November 2024}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+    \textbf{COMP 451}
+\end{center}
+\section*{Vectorizing the Dataset}
+Andy Chamberlain and IDK Wein’s \textit{The Lick} dataset was used to train this model. This dataset is composed of 18 thousand unique audio snippets. Roughly half of them contain examples of \textit{The Lick} while the other half contain a different melody. Within these two categories, there are three subcategories. These are:
+
+\begin{itemize}
+    \item \textbf{solo}: These are single midi instruments playing in isolation. 
+    \item \textbf{combo}: Two or more midi instruments playing in concert. 
+    \item \textbf{External}: Music samples from official recordings. 
+\end{itemize}
+It was found that 98\% of the audio files were under 4 seconds in length, and so each audio file was either padded or trimmed to 4 seconds to ensure consistency in the data. With each audio file, four greyscale images are produced. 
+
+\subsection*{Mel Spectrograms}
+The first greyscale image produced is a Mel-Spectrogram. This is done by performing a sequence of Short-Time Fourrier Transforms (STFT) on IDK-HOW-LONG time window divisions of the total 4s sample.
+The result is a spectrogram which can be rescaled to the Mel-scale, which puts emphasis on the frequency range of human hearing.
+This is done by converting the frequency $f$ into a “mel” $m$ by the formula 
+\[ m = 2595\log_{10}\left(1 + \frac{f}{700}\right)\]\cite{SOMETHING}
+
+\subsection{Deltas}
+A common method for extracting information about variations in sound over time is through the use of differences in signal features (abbreviated as $\Delta$). Specifically, for a musical feature, such as frequencies plotted in a spectrogram, the $\Delta$ is defined as the change in this frequency between two consecutive time frames. Thus, for some time frame $k$ and some frequency $f_k$, its delta is given by
+$$\Delta_k = f_k - f_{k-1}$$.
+The second difference, known as the $\Delta\Delta$ is given by
+$$ \Delta\Delta_k = \Delta_k - \Delta_{k-1}$$. 
+These provide computationally trivial methods of approximating the first and second derivative of a signal, which could be helpful for identifying note changes when trying to recognize \textit{The Lick}.
+\bibliographystyle{IEEEtran}
+
+\bibliography{bibliography}
+\end{document}
