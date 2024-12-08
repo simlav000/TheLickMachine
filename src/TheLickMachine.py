@@ -4,7 +4,7 @@ import torch
 import torchvision
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader 
+from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional
 
 def main():
@@ -105,7 +105,7 @@ class TheLickMachine(nn.Module):
         self.fully_connected = nn.Sequential(
             nn.Linear(flattened_size, 128),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            #nn.Dropout(0.5),
             nn.Linear(128, 1) # Single output for binary classification
         )
 
