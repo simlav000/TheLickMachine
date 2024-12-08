@@ -147,15 +147,5 @@ if __name__ == "__main__":
     pwd = os.environ["PWD"]
 
     dir_positive = os.path.join(
-        pwd, "../data/TheLick-ALL_2022-02-07v5/positive/")
-
-    data = np.load("audio_dataset_sample.npy")
-
-    feature0 = data[0]
-    feature12 = data[12]
-
-    if all(obj.shape == (4, 128, 157) for obj in data):
-        print("True")
-    else:
-        print("False")
-    # process_audio_directory(dir_positive, "audio_dataset_sample.npy")
+        pwd, "../data/dataset/external/negatives/")
+    process_audio_directory(dir_positive, "external_negatives_vectorized.npy")
