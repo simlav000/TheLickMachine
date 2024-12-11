@@ -1,4 +1,5 @@
 import os
+from torch.utils.data import ConcatDataset
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -32,7 +33,7 @@ class Data(Dataset):
 
 # Make functions that return the loaders
 def makeLoader(
-    type,
+    t,
     bs=64,
     shuffle=True,
     workers=0,
@@ -41,9 +42,9 @@ def makeLoader(
     transform_test=None,
 ):
     # Load data
-    x_positive = np.load(pathToDataset + type + "_positives_vectorized.npy")
+    x_positive = np.load(pathToDataset + t + "_positives_vectorized.npy")
     y_positive = np.ones(x_positive.shape[0])
-    x_negative = np.load(pathToDataset + type + "_negatives_vectorized.npy")
+    x_negative = np.load(pathToDataset + t + "_negatives_vectorized.npy")
     y_negative = np.zeros(x_negative.shape[0])
 
     pts = int(y_positive.shape[0] * (1 - test_ratio))  # positive training size
@@ -66,3 +67,18 @@ def makeLoader(
         dataset_test, batch_size=bs, shuffle=shuffle, num_workers=workers
     )
     return (loader_train, loader_test)
+
+
+# Takes two loaders and merge them into one
+def mergeLoaders(
+    l1,
+    l2,
+    bs=64,
+    shuffle=True,
+    workers=0,
+):
+    dt1 = l1.dataset
+    dt2 = l2.dataset
+    dt = ConcatDataset([dt1, dt2])
+    l = DataLoader(dt, batch_size=bs, shuffle=shuffle, num_workers=workers)
+    return l
