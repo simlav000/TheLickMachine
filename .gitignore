@@ -4,3 +4,4 @@ data
 path.txt
 *.png
 *.jpg
+*.pth

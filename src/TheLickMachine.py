@@ -22,7 +22,9 @@ class TheLickMachine(nn.Module):
         self.cout2 = 48
         self.cout3 = 82
         self.cout4 = 164
+        self.cout5 = 132
 
+        self.cdrop = 0.1
         self.conv_block1 = nn.Sequential(
             # My idea is to start with large kernel sizes since the features
             # we're looking at are relatively large. We reduce it as we go. We
@@ -33,6 +35,7 @@ class TheLickMachine(nn.Module):
             nn.ReLU(),
             nn.BatchNorm2d(self.cout1),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(self.cdrop),
 
             # Second conv
             nn.Conv2d(
@@ -52,7 +55,8 @@ class TheLickMachine(nn.Module):
             ),
             nn.ReLU(),
             nn.BatchNorm2d(self.cout3),
-            nn.AvgPool2d(kernel_size=2),
+            nn.Dropout(self.cdrop),
+
 
             # Fourth conv
             nn.Conv2d(
@@ -62,7 +66,16 @@ class TheLickMachine(nn.Module):
             ),
             nn.ReLU(),
             nn.BatchNorm2d(self.cout4),
-            nn.AvgPool2d(kernel_size=2),
+            nn.Dropout(self.cdrop),
+            #
+            # Fifth conv
+            nn.Conv2d(
+                in_channels=self.cout4,
+                out_channels=self.cout5,
+                kernel_size=3,
+            ),
+            nn.ReLU(),
+            nn.BatchNorm2d(self.cout5),
         )
 
         # Placeholder field to show there is a fully connected block
@@ -75,17 +88,17 @@ class TheLickMachine(nn.Module):
         self.lout2 = 164
         self.lout3 = 1  # Single output for binary classification
 
+        self.ldrop = 0.5
         self.fully_connected = nn.Sequential(
             # First lin
             nn.Linear(self.flattened_size, self.lout1),
             nn.ReLU(),
-            # nn.Dropout(0.5),
+            nn.Dropout(self.ldrop),
             nn.BatchNorm1d(self.lout1),
 
             # Second lin
             nn.Linear(self.lout1, self.lout2),
             nn.ReLU(),
-            # nn.Dropout(0.5),
             nn.BatchNorm1d(self.lout2),
 
             # Third lin

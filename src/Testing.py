@@ -1,11 +1,10 @@
-from sys import prefix
+from typing import cast
 import torch
 import numpy as np
 from TheLickMachine import TheLickMachine
 from DataSetLoader import makeLoader
 import subprocess
 from DataSetLoader import Data
-from typing import cast
 
 # get path to root
 git_root = (
@@ -16,13 +15,14 @@ git_root = (
     .strip()
 )
 # Get cuda device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device used: {device}")
 
 # Load model
 model = TheLickMachine()
-model.load_state_dict(torch.load(git_root + "/model.pth", weights_only=True))
+model.load_state_dict(torch.load(git_root + "/cnn.pth", weights_only=True))
 model.eval()  # Set to eval mode
+
 
 # Model tester
 def test(loader, model, prefix="", device=torch.device("cpu")):
@@ -37,20 +37,37 @@ def test(loader, model, prefix="", device=torch.device("cpu")):
             # Now test
             output_batch = model(input_batch).view(-1).to("cpu")
             output_batch_rounded = np.vectorize(rounding_lambda)(output_batch)
-            correct_output += sum(x == y for x, y in zip(output_batch_rounded, label_batch))
+            correct_output += sum(
+                x == y for x, y in zip(output_batch_rounded, label_batch)
+            )
 
     data = cast(Data, loader.dataset)
     total_labels = len(data)
     accuracy = correct_output / total_labels
     print(f"{prefix}accuracy: {accuracy}")
 
+
 # Load some data
-types = ["solo", "combo", "external"]
+types = ["solo", "combo", "external", "external2"]
 t = 0
-(_, loader_test) = makeLoader(types[t], workers=2, test_ratio=0.2) # test_raito has to be the same as in the training
-test(loader_test, model, prefix="solo ", device=device)
+(loader_train, loader_test) = makeLoader(
+    types[t], workers=2, test_ratio=0.2
+)  # test_raito has to be the same as in the training
+test(loader_test, model, prefix="solo_test ", device=device)
+test(loader_train, model, prefix="solo_train ", device=device)
+print()
 
-t = 1
-(_, loader_test) = makeLoader(types[t], workers=2, test_ratio=0.2) # test_raito has to be the same as in the training
-test(loader_test, model, prefix="combo ", device=device)
+# t = 1
+# (loader_train, loader_test) = makeLoader(types[t], workers=2, test_ratio=0.2) # test_raito has to be the same as in the training
+# test(loader_test, model, prefix="combo_test ", device=device)
+# test(loader_test, model, prefix="combo_train ", device=device)
+# print()
 
+
+t = 3
+(loader_train, loader_test) = makeLoader(
+    types[t], workers=2, test_ratio=0.2
+)  # test_raito has to be the same as in the training
+test(loader_test, model, prefix="external_test ", device=device)
+test(loader_train, model, prefix="external_train ", device=device)
+print()

@@ -12,7 +12,7 @@ transform_train = transforms.Compose(
 )
 
 types = ["solo", "combo", "external"]
-type = 0
+type = 2
 (loader_train, loader_test) = makeLoader(
     types[type], workers=2, transform_train=transform_train
 )
