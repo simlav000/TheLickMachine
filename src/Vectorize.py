@@ -1,20 +1,15 @@
 import os
+import soundfile
+import random
+from typing import cast
 import numpy as np
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 
 
-def vectorize(fname: str, target_duration: float = 5.0,  sr: int = 16000) -> list:
-    # Load the audio file. Set sample rate to 16kHz
-    y, _ = librosa.load(fname, sr=sr)
 
-    # Calculate target length in samples
-    target_length = int(target_duration * sr)
-
-    # Trim or pad the audio to the target length
-    y = librosa.util.fix_length(y, size=target_length)
-
+def vectorize(y, sr: int = 16000) -> list:
     # Compute the Mel-spectrogram
     mel_spec = librosa.feature.melspectrogram(
         y=y,
@@ -44,8 +39,62 @@ def vectorize(fname: str, target_duration: float = 5.0,  sr: int = 16000) -> lis
     features_raw = [mel_spec, mel_spec_delta, mel_spec_delta2, chromagram]
     return features_raw
 
+def fix_length(y, target_duration: float = 5.0, sr = 16000):
+    # Calculate target length in samples
+    target_length = int(target_duration * sr)
+
+    # Trim or pad the audio to the target length
+    y = librosa.util.fix_length(y, size=target_length)
+
+    return y
+
+
+def change_tempo(y):
+    tempo_factor = random.uniform(0.5, 1.5)
+    # Adjust the tempo
+    modified_audio = librosa.effects.time_stretch(y, rate=tempo_factor)
+
+    return modified_audio
+
+
+def add_pink_noise(y, noise_level=0.1):
+    # Generate pink noise with the same length as the audio signal
+    white_noise = np.random.normal(0, 1, y.shape)  # Generate white noise
+    pink_noise = np.cumsum(white_noise)  # Simple 1/f filtering to create pink noise
+    pink_noise -= pink_noise.mean()  # Center the noise around zero
+    pink_noise = pink_noise / np.max(np.abs(pink_noise))  # Normalize to [-1, 1]
+
+    # Scale the pink noise to control the volume relative to the original audio
+    pink_noise = pink_noise * noise_level
+
+    # Add the pink noise to the original audio
+    y_noisy = y + pink_noise
+
+    return y_noisy
+
+
+def pitch_shift(y, sr=16000, min_shift=-5, max_shift=5):
+    # Generate a random pitch shift between min_shift and max_shift
+    pitch_shift = random.uniform(min_shift, max_shift)
+
+    y_shifted = librosa.effects.pitch_shift(y, sr=sr, n_steps=pitch_shift)
+
+    return y_shifted
+
+
+def transform(y):
+    return pitch_shift(add_pink_noise(fix_length(change_tempo(y))))
+
+
+def reconstruct_audio(y, sr=16000):
+    y_reconstructed = librosa.feature.inverse.mel_to_audio(y, sr=sr, n_iter=32, hop_length=512)
+
+    # Save the reconstructed audio
+    soundfile.write('reconstructed_audio.wav', y_reconstructed, sr)
+
 
 def normalize(features):
+
     mel_spec, mel_spec_delta, mel_spec_delta2, chromagram = features
     from scipy.ndimage import zoom
     # Resize the chromagram to match the Mel spectrogram's dimensions
@@ -63,64 +112,6 @@ def normalize(features):
     return features
 
 
-def check_normalization(features):
-    means = np.mean(features, axis=(1, 2))
-    stds = np.std(features, axis=(1, 2))
-    print("Means per channel:", means)
-    print("Standard deviations per channel:", stds)
-
-
-def plot_features(features, sr=16000):
-    mel_spec, mel_spec_delta, mel_spec_delta2, chromagram = features
-
-    # Create a figure with four subplots
-    plt.figure(figsize=(12, 16))
-
-    # Plot the Mel-spectrogram
-    plt.subplot(4, 1, 1)
-    librosa.display.specshow(
-        librosa.power_to_db(mel_spec, ref=np.max),
-        y_axis='mel',
-        x_axis='time',
-        sr=sr
-    )
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Mel Spectrogram')
-
-    # Plot the Delta of Mel-spectrogram
-    plt.subplot(4, 1, 2)
-    librosa.display.specshow(
-        librosa.power_to_db(mel_spec_delta, ref=np.max),
-        y_axis='mel',
-        x_axis='time',
-        sr=sr
-    )
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Delta of Mel Spectrogram')
-
-    # Plot the Delta-Delta of Mel-spectrogram
-    plt.subplot(4, 1, 3)
-    librosa.display.specshow(
-        librosa.power_to_db(mel_spec_delta2, ref=np.max),
-        y_axis='mel',
-        x_axis='time',
-        sr=sr
-    )
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Delta-Delta of Mel Spectrogram')
-
-    # Plot the Chromagram
-    plt.subplot(4, 1, 4)
-    librosa.display.specshow(chromagram, x_axis='time',
-                             y_axis='chroma', cmap='coolwarm')
-    plt.colorbar(label='Chromagram amplitude')
-    plt.title('Chromagram')
-
-    # Show the plots
-    plt.tight_layout()
-    plt.show()
-
-
 def process_audio_directory(input_dir, output_file):
     # List to hold feature arrays
     all_features = []
@@ -130,7 +121,8 @@ def process_audio_directory(input_dir, output_file):
     for idx, file in enumerate(mp3_files, start=1):
         file_path = os.path.join(input_dir, file)
         try:
-            features = normalize(vectorize(file_path))
+            y, _ = librosa.load(file_path, sr=16000)
+            features = normalize(vectorize(transform(y)))
             all_features.append(features)
         except Exception as e:
             print(f"Failed to process {file_path}: {e}")
@@ -143,9 +135,11 @@ def process_audio_directory(input_dir, output_file):
 
     print(f"Dataset saved to {output_file}")
 
+
 if __name__ == "__main__":
     pwd = os.environ["PWD"]
 
-    dir_positive = os.path.join(
-        pwd, "../data/dataset/external/negatives/")
-    process_audio_directory(dir_positive, "external_negatives_vectorized.npy")
+    dir_positive = os.path.join(pwd, "../data/TheLick_2022-02-11_v6/TheLick_2022-02-07_v5/external/positives/")
+    #sample = r"../data/PositiveExternal/lick_0001.mp3"
+
+    process_audio_directory(dir_positive, "external_negatives_transformed_vectorized.npy")
