@@ -4,10 +4,11 @@ import torch.nn.functional
 
 
 class TheLickMachine(nn.Module):
-    def __init__(self):
+    def __init__(self, rnn=False):
         super(TheLickMachine, self).__init__()
 
         self.input_shape = (4, 128, 157)
+        self. rnn = rnn
         # 16k samples per second * 5 seconds = 80k total samples
         # 80k samples / 512 samples per successive frames ~ 157 horizontal frames
         #
@@ -55,6 +56,7 @@ class TheLickMachine(nn.Module):
             ),
             nn.ReLU(),
             nn.BatchNorm2d(self.cout3),
+            nn.AvgPool2d(kernel_size=2),
             nn.Dropout(self.cdrop),
 
 
@@ -66,6 +68,7 @@ class TheLickMachine(nn.Module):
             ),
             nn.ReLU(),
             nn.BatchNorm2d(self.cout4),
+            nn.AvgPool2d(kernel_size=2),
             nn.Dropout(self.cdrop),
             #
             # Fifth conv
@@ -82,6 +85,11 @@ class TheLickMachine(nn.Module):
         # It will be defined dynamically in _init_fc so we don't need to
         # manually compute flattened shapes after changing the above convblocks
         self.flattened_size = self.getFlattened()
+        # RNN layer
+        self.rnn_layer = nn.Sequential(
+            # First recurrent layer
+            nn.LSTM(self.flattened_size, self.flattened_size, num_layers=2),
+        )
 
         # output channel sizes for the dense layers
         self.lout1 = 256
@@ -93,17 +101,18 @@ class TheLickMachine(nn.Module):
             # First lin
             nn.Linear(self.flattened_size, self.lout1),
             nn.ReLU(),
-            nn.Dropout(self.ldrop),
             nn.BatchNorm1d(self.lout1),
 
             # Second lin
             nn.Linear(self.lout1, self.lout2),
             nn.ReLU(),
+            nn.Dropout(self.ldrop),
             nn.BatchNorm1d(self.lout2),
 
             # Third lin
             nn.Linear(self.lout2, self.lout3),
         )
+
 
     def getFlattened(self):
         # Passes a dummy tensor to model to dynamically compute shape of
@@ -121,8 +130,12 @@ class TheLickMachine(nn.Module):
             x.shape[0], self.flattened_size
         )  # Reshape for dense layer (batch_size, flattened_size)
 
+        if self.rnn:
+            x, (hn, cn) = self.rnn_layer(x)
+
         conv1_shape = x.shape
         x = self.fully_connected(x)
+
 
         flat_shape = x.shape
         x = torch.sigmoid(x)  # Sigmoid for Binary Cross-Entropy Loss

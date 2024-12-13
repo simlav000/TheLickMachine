@@ -22,14 +22,12 @@ print(f"Device used: {device}")
 # Used for data augmentation
 transform_train = transforms.Compose(
     [
-        transforms.RandomAffine(
-            translate=(0.1, 0), degrees=0
-        ),
+        transforms.RandomAffine(translate=(0.1, 0), degrees=0),
     ]
 )
 
 # Initializing
-model = TheLickMachine()
+model = TheLickMachine(rnn=True)
 criterion = nn.BCEWithLogitsLoss()
 
 
@@ -75,18 +73,20 @@ types = ["solo", "combo", "external", "external2"]
 # Train model
 regu = 1e-3
 # Solo
-t = 0
-(loader_train_solo, _) = makeLoader(
-    types[t], workers=2, transform_train=transform_train, test_ratio=0.2
-)
+# t = 0
+# (loader_train_solo, _) = makeLoader(
+#     types[t], workers=2, transform_train=transform_train, test_ratio=0.2
+# )
 # print(f"Training on: {types[t]}")
 # learning_rate = 0.0005
-# optimizer = optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999), weight_decay=regu) # With l2 regularization
-# train(loader_train_solo, model, optimizer, criterion, device=device)
+# optimizer = optim.Adam(
+#     model.parameters(), lr=learning_rate, betas=(0.9, 0.999), weight_decay=regu
+# )  # With l2 regularization
+# train(loader_train_solo, model, optimizer, criterion, device=device, num_epochs=50)
 # print()
 
 # Combo
-t = 1
+# t = 1
 # (loader_train_combo, _) = makeLoader(types[t], workers=2, transform_train=transform_train, test_ratio=0.2)
 # print(f"Training on: {types[t]}")
 # learning_rate = 0.0007
@@ -104,7 +104,7 @@ learning_rate = 0.0001
 optimizer = optim.Adam(
     model.parameters(), lr=learning_rate, betas=(0.9, 0.999), weight_decay=regu
 )  # With l2 regularization
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=3)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", patience=5)
 train(
     loader_train_ext,
     model,
